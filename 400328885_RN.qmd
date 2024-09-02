@@ -1,0 +1,481 @@
+---
+title: "HTHSCI 1M03: Final Project"
+author: "Rommaisa Nadeem 400328885"
+format: pdf
+documentclass: article
+classoption: [9pt]
+header-includes:
+  - \usepackage{geometry}
+  - \geometry{top=2cm, bottom=2cm, left=2.5cm, right=2.5cm}
+  - \usepackage{listings}
+  - \lstset{breaklines=true, basicstyle=\ttfamily\small, frame=tb}
+---
+
+#### 1. Introduction
+
+The data used in this project was sourced from [Kaggle](https://www.kaggle.com/datasets/berkeleyearth/climate-change-earth-surface-temperature-data/data?select=GlobalLandTemperaturesByCountry.csv). This dataset offers an extensive look at global temperatures over time, offering insight into the implications and impacts of climate change. Since the industrial revolution, human actions, especially the combustion of fossil fuels, have been the primary drivers of climate change across the world (Garbary et al, 2021). While it's evident that global temperatures are rising, it's crucial to investigate if these trends are mirrored at the local level and how local geographical patterns might amplify or mitigate these global climatic shifts (Garbary et al, 2021). In this project, I am to extract meaningful insights about global land temperatures and its variations over time across different regions. I will ask the following questions:
+
+1.  How has the global average temperature changed over time? 
+2.  How has the average land temperature in Canada changed over the decades compared to the global average, and what are the variations across different provinces in Canada?
+3.  How does the average land temperature vary across different parts of the world? 
+
+These questions are essential and interesting for several reasons, primarily due to their implications for understanding climate change, its impacts, and regional variations in its effects:
+
+1.  **Global Average Temperature Changes Over Time**: Understanding how the global average temperature has changed over time is crucial for recognizing the trends and patterns of climate change. This helps scientists confirm the warming of the planet, largely attributed to human activities such as deforestation and the burning of fossil fuels. The data enables predictions about future climate conditions and helps in planning mitigation strategies.
+
+2.  **Average Land Temperature Changes in Canada Compared to the Global Average**: By examining how the average land temperature in Canada has changed over the decades and comparing it to the global average, one can discern how climate change impacts Canada specifically. Canada's vast size and varied geography make it a significant case study for understanding different climate impacts within a single country.
+
+3.  **Variations Across Different Provinces in Canada**: Analyzing temperature changes in different provinces of Canada can reveal localized patterns of climate change. Different areas may experience varied effects due to factors like proximity to oceans, altitude, and prevailing wind patterns. This localized data is critical for provincial and local governments to develop targeted adaptation and resilience strategies.
+
+4.  **Temperature Variations Across Different Parts of the World**: Understanding how the average land temperature varies across different regions worldwide helps illustrate the unequal distribution of climate change effects. Some regions may experience more severe changes than others, which can influence global policies on climate action and aid distribution. This knowledge is also vital for biodiversity conservation, agricultural planning, and managing water resources affected by changing climates.
+
+Each of these questions contributes to a comprehensive understanding of Earth's climatic systems, regional and global impacts of climate change, and the necessary policy responses.
+
+#### 2. Data Wrangling Plan
+
+```{r}
+#| echo: false
+#| include: false
+#| label: setup
+
+library(readr)
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(gt)
+library(forcats)
+library(stringr)
+library(dslabs)
+library(ggplot2)
+library(viridis)
+library(scales)
+library(tidyverse)
+
+set.seed(34)
+```
+
+#### Global Temperatures Dataset
+
+#### Iteration 1
+
+Phase 1
+
+1.  Read the csv file into R.
+
+2.  Make the column names lowercase.
+
+3.  Determine if the data is Tidy and if not, fix it.
+
+4.  Identify UIDs.
+
+5.  Drop unnecessary columns
+
+Phase 2
+
+```{r}
+##1. 
+temp_tib <- read.csv("GlobalTemperatures.csv") %>% 
+  glimpse()
+```
+
+```{r}
+##2. 
+temp_tib1 <- temp_tib %>% rename_with(tolower) %>% glimpse()
+```
+
+```{r}
+##3.
+temp_tib1 %>% count (landaveragetemperature, dt) %>% filter(n >1)
+```
+
+• The uid's are dt and landaveragetemperature.
+
+```{r}
+##4. 
+temp_tib2 <- temp_tib1 %>% select(landaveragetemperature, dt)
+temp_tib2 %>% glimpse
+```
+
+#### Iteration 2
+
+Phase 1
+
+1.  Check for NA values in the columns.
+
+    -   Drop NA values.
+
+2.  Mutate a new column for year.
+
+    -   Calculate average temperatures by year.
+
+3.  Check if the tibble is Tidy.
+
+```{r}
+##1. 
+temp_tib2 %>% summary()
+```
+
+```{r}
+temp_tib3 <- temp_tib2 %>% drop_na()
+temp_tib3 %>% summary()
+```
+
+```{r}
+##2. 
+temp_tib4 <- temp_tib3 %>%
+  mutate(year = year(as.Date(dt)))
+temp_tib4 %>% glimpse
+```
+
+```{r}
+yearly_avg_temp <- temp_tib4 %>%
+  group_by(year) %>% 
+  summarise(avg_temp = mean(landaveragetemperature))
+yearly_avg_temp %>% glimpse
+```
+
+```{r}
+##3. 
+yearly_avg_temp %>% head(10)
+
+```
+
+#### Global Land Temperatures By Country Dataset
+
+#### Iteration 1
+
+Phase 1
+
+1.  Read the csv file into R.
+
+2.  Make the column names lowercase.
+
+3.  Identify UIDs.
+
+4.  Drop unnecessary columns
+
+Phase 2
+
+```{r}
+##1. 
+country_tib <- read.csv("GlobalLandTemperaturesByCountry.csv") %>% 
+  glimpse()
+```
+
+```{r}
+##2. 
+country_tib1 <- country_tib %>% rename_with(tolower) %>% glimpse()
+```
+
+```{r}
+##3. 
+country_tib1 %>% count (averagetemperature, country, dt) %>% filter(n >1)
+```
+
+• The uids are averagetemperature, country and dt.
+
+```{r}
+##4. 
+country_tib2 <- country_tib1 %>% select(averagetemperature, country, dt)
+country_tib2 %>% glimpse
+```
+
+#### Iteration 2
+
+Phase 1
+
+1.  Check for NA values in the columns.
+
+    -   Drop NA values.
+
+2.  Mutate a new column for year.
+
+3.  Group data by the country column.
+
+    -   Calculate average temperatures for each country.
+
+4.  Check if the tibble is Tidy.
+
+Phase 2
+
+```{r}
+##1. 
+country_tib2 %>% summary()
+```
+
+```{r}
+country_tib3 <- country_tib2 %>% drop_na()
+country_tib3 %>% summary()
+```
+
+```{r}
+##2. 
+country_tib4 <- country_tib3 %>%
+  mutate(year = year(as.Date(dt)))
+country_tib4 %>% glimpse
+
+```
+
+```{r}
+##3. 
+countries_avg_temp <- country_tib4 %>%
+  group_by(country) %>% 
+  summarise(avg_temp = mean(averagetemperature))
+countries_avg_temp %>% glimpse
+```
+
+```{r}
+##4. 
+countries_avg_temp %>% head(10)
+```
+
+#### Global Land Temperatures By State Dataset
+
+#### Iteration 1
+
+Phase 1
+
+1.  Read the csv file into R.
+
+2.  Make the column names lowercase.
+
+3.  Identify UIDs.
+
+4.  Drop unnecessary columns
+
+Phase 2
+
+```{r}
+##1. 
+province_tib <- read.csv("GlobalLandTemperaturesByState.csv") %>% 
+  glimpse()
+```
+
+```{r}
+##2. 
+province_tib1 <- province_tib %>% rename_with(tolower) %>% glimpse()
+
+```
+
+```{r}
+##3. 
+province_tib1 %>% count (averagetemperature, state, dt) %>% filter(n >1)
+```
+
+• These uids look good!
+
+```{r}
+##4. 
+province_tib2 <- province_tib1 %>% select(averagetemperature, country, state, dt)
+province_tib2 %>% glimpse
+```
+
+#### Iteration 2
+
+Phase 1
+
+1.  Check for NA values in the columns.
+
+    -   Drop NA values.
+
+2.  Mutate a new column for year.
+
+3.  Filter out Canada from the 'country' column and focus on the provinces with Canada from the 'state' column.
+
+    -   Calculate average temperatures for each province within Canada.
+
+4.  Check if the tibble is Tidy.
+
+Phase 2
+
+```{r}
+##1. 
+province_tib2 %>% summary()
+```
+
+```{r}
+province_tib3 <- province_tib2 %>% drop_na()
+province_tib3 %>% summary()
+```
+
+```{r}
+##2. 
+province_tib4 <- province_tib3 %>%
+  mutate(year = year(as.Date(dt)))
+province_tib4 %>% glimpse
+```
+
+```{r}
+##3. 
+canada_province_data <- province_tib4 %>%
+  filter(country == "Canada") %>%
+  group_by(state, year) %>% 
+  summarise(avg_temp = mean(averagetemperature))  
+canada_province_data %>% glimpse
+
+```
+
+```{r}
+##4. 
+canada_province_data %>% head(10)
+```
+
+#### Iteration 3
+
+Phase 1
+
+1.  Inner join yearly_avg_temp tibble and canada_province_data tibble by year.
+2.  Rename columns for clarity.
+
+Phase 2
+
+```{r}
+##1. 
+comparison_data <- inner_join(yearly_avg_temp, canada_province_data, by = "year")
+comparison_data %>% glimpse
+```
+
+```{r}
+##2. 
+comparison_data1 <- comparison_data %>%
+  rename(global_avg_temp = avg_temp.x, canada_avg_temp = avg_temp.y)
+comparison_data1 %>% glimpse
+```
+
+#### 3. Results & Visualizations
+
+```{r}
+##Question 1
+#| fig-cap: "Figure 1: This graph depicts the trend in average land temperature globally from the year 1800 to 2010. The temperatures are measured in degrees Celsius (°C). A clear upward trend can be observed, particularly from the mid-20th century onwards, indicating a increase in global temperatures over the period."
+
+ggplot(data = yearly_avg_temp, aes(x = year, y = avg_temp)) +
+  geom_line(color = "blue") +
+  labs(title = "Average Land Temperature in World", x = "Year", y = "Average Land Temperature (°C)") +
+  theme_minimal(base_size = 11) +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.ticks = element_line(color = "black"), 
+    panel.background = element_blank(), 
+    panel.grid = element_blank(), 
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position = "none",
+    axis.line = element_line(color = "black") 
+  ) +
+  scale_x_continuous(breaks = seq(from = 1800, to = 2010, by = 10), limits = c(1800, 2010)) +
+  scale_y_continuous(breaks = seq(from = 1, to = 20, by = 1), limits = c(min(yearly_avg_temp$avg_temp), 10))
+
+```
+
+Figure 1: This graph depicts the trend in average land temperature globally from the year 1800 to 2010. The temperatures are measured in degrees Celsius (°C). A clear upward trend can be observed, particularly from the mid-20th century onwards, indicating a increase in global temperatures over the period.
+
+Figure 1 corresponds to the question, "How has the global average temperature changed over time?"
+
+```{r}
+#| label: province colors 
+
+province_colors <- c(
+  "Alberta" = "red",
+  "British Columbia" = "orange",
+  "Manitoba" = "cyan",
+  "New Brunswick" = "yellow",
+  "Newfoundland And Labrador" = "purple",
+  "Northwest Territories" = "green",  
+  "Nova Scotia" = "pink",             
+  "Nunavut" = "aquamarine2",        
+  "Ontario" = "darkolivegreen",
+  "Prince Edward Island" = "maroon",
+  "Saskatchewan" = "coral2",
+  "Yukon" = "darkgoldenrod2",
+  "Global" = "blue"                   
+)
+
+```
+
+```{r plot_2, fig.width=11, fig.height=7.5}
+##Question 2
+#| fig-cap: "Figure 2: A comparison of average annual temperatures from 1800 to 2010, illustrating the temperature trends for various provinces in Canada alongside the global average temperature. The data shows variability across different regions, with the global average temperature trend exhibiting a warming pattern, especially noticeable in recent decades. Compared to the global average, Canada had lower average temperatures, with Nova Scotia being the highest, and Nunavut being the lowest."
+
+filtered_data <- comparison_data1 %>%
+  filter(year >= 1800)
+
+ggplot(filtered_data, aes(x = year)) +
+  geom_line(aes(y = global_avg_temp, colour = "Global"), linewidth = 1) +
+  geom_line(aes(y = canada_avg_temp, colour = state), linewidth = 0.6, alpha = 0.8) +
+  scale_x_continuous(breaks = seq(min(filtered_data$year), max(filtered_data$year), by = 10)) +
+  scale_y_continuous(breaks = seq(floor(min(c(filtered_data$global_avg_temp, filtered_data$canada_avg_temp))),
+                                   ceiling(max(c(filtered_data$global_avg_temp, filtered_data$canada_avg_temp))), by = 2)) +
+  scale_color_manual(values = province_colors) + 
+  labs(title = "Comparison of Average Temperatures",
+       subtitle = "Global vs. Canada by Province",
+       x = "Year",
+       y = "Average Temperature (°C)",
+       colour = "Legend") +
+  theme_minimal() +
+theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5),
+      legend.position = "right",
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      axis.text.y = element_text(hjust = 1),
+      axis.title = element_text(face = "bold"),
+      axis.line = element_line(linewidth = 0.5),
+      panel.background = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.background = element_blank())
+
+
+
+```
+
+Figure 2: A comparison of average annual temperatures from 1800 to 2010, illustrating the temperature trends for various provinces in Canada alongside the global average temperature. The data shows variability across different regions, with the global average temperature trend exhibiting a warming pattern, especially noticeable in recent decades. Compared to the global average, Canada had lower average temperatures, with Nova Scotia being the highest, and Nunavut being the lowest."
+
+Figure 2 corresponds to the question, "How has the average land temperature in Canada changed over the decades compared to the global average, and what are the variations across different provinces in Canada?"
+
+```{r plot_3, fig.width=10, fig.height=35}
+##Question 3
+#| page-break-before: true
+#| fig-cap: "This graph depicts the trend in average land temperature across different countries. The temperatures are measured in degrees Celsius (°C). The color gradient indicates the average temperature, with blue being the lowest values and the red with the highest values. Djibouti is noted to have the highest average temperature, while Greenland has the lowest average temperature."
+
+countries_avg_temp <- countries_avg_temp %>%
+  arrange(desc(avg_temp))
+
+ggplot(countries_avg_temp, aes(x = reorder(country, avg_temp), y = avg_temp, fill = avg_temp)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(x = "Country", y = "Average Temperature (°C)", 
+       title = "Average Land Temperature (°C) in Countries") +
+  scale_fill_gradientn(colors = c("blue", "cyan", "yellow", "orange", "red"), 
+                       values = scales::rescale(c(0, 0.25, 0.5, 0.75, 1))) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 8)) 
+```
+
+Figure 3: This graph depicts the trend in average land temperature across different countries. The temperatures are measured in degrees Celsius (°C). The color gradient indicates the average temperature, with blue being the lowest values and the red with the highest values. Djibouti is noted to have the highest average temperature, while Greenland has the lowest average temperature."
+
+Figure 3 corresponds to the question "How does the average land temperature vary across different parts of the world?".
+
+#### 4. Discussion
+
+The analysis of global land temperatures reveals significant insights into climate change patterns. This discussion integrates these findings within the broader context of climate dynamics.
+
+**Global Average Temperature Changes Over Time**
+
+The data from Figure 1 indicates a marked increase in global temperatures, especially pronounced from the mid-20th century. This trend aligns with the escalation of industrial activities and greenhouse gas emissions, supporting scientific consensus on human-induced climate change (Garbary et al., 2021). This upward trend highlights the critical need for effective global environmental policies.
+
+**Average Land Temperature Changes in Canada Compared to the Global Average**
+
+Figure 2 shows variability in the average temperatures across Canadian provinces compared to the global trend, with spikes that could signify extreme weather events or the impacts of industrial activities. Nova Scotia recorded higher temperatures relative to other provinces, with Nunavut being the coolest. These variations suggest that localized factors like geography and proximity to water bodies significantly influence regional climates, necessitating tailored climate strategies.
+
+**Temperature Variations Across Different Parts of the World**
+
+Figure 3 demonstrates the global disparity in temperature changes, with Djibouti and Greenland representing the highest as the lowest. As Figure 3 shows global average temperature has varied signficiantly across different regions. This underlines the uneven impacts of climate change and the need for region-specific responses to climate policy and resource distribution.
+
+#### **Conclusion**
+
+This study confirms the significant, human-driven rise in global temperatures and highlights regional differences within Canada and worldwide. The variability seen in Canadian temperatures and the spikes indicating possible extreme events or historical impacts like the industrial revolution emphasize the complexity of climate phenomena. These insights are crucial for developing effective, localized climate adaptation and mitigation strategies. Globally, the data calls for international cooperation to address diverse climate challenges tailored to specific regional needs.
+
+#### 5. References
+
+*Climate Change: Earth Surface Temperature Data*. (n.d.). Www.kaggle.com. Retrieved April 16, 2024, from https://www.kaggle.com/datasets/berkeleyearth/climate-change-earth-surface-temperature-data/data?select=GlobalLandTemperaturesByCountry.csv
+
+Garbary, D. J., & Hill, N. M. (2021). Climate change in Nova Scotia: temperature increases from 1961 to 2020. *Proceedings of the Nova Scotian Institute of Science (NSIS)*, *51*(2), 32. https://doi.org/10.15273/pnsis.v51i2.11174
